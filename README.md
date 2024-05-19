@@ -1,3 +1,6 @@
+#PLEASE NOTE: I recieved code source from AskBCS, Xpert Learning Assitant, and tutors.
+
+
 Module 10 Challenge
 
 
