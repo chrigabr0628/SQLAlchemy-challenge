@@ -1,15 +1,37 @@
 from flask import Flask, jsonify
+import sqlalchemy
+from sqlalchemy.ext.automap import automap_base
+from sqlalchemy.orm import Session
+from sqlalchemy import create_engine, func
+import numpy as np
+import pandas as pd
+import datetime as dt
 
 #################################################
 # Flask Setup
 #################################################
 app = Flask(__name__)
 
- 
+engine = create_engine("sqlite:///Resources/hawaii.sqlite")
+
+Base = automap_base()
+
+# reflect the tables
+Base.prepare(engine, reflect = True)
+
+Base.classes.keys()
+
+
+Station = Base.classes.station
+Measurement = Base.classes.measurement
+
+session = Session(engine)
+
 #################################################
 # Flask Routes
 #################################################
 
+# Create homepage
 
 @app.route("/")
 def welcome():
@@ -23,13 +45,14 @@ def welcome():
         f"/api/v1.0/[start]/[end]<br/>"
     )
 
+# Create all available routes 
 
 @app.route("/api/v1.0/precipitation")
 def precipitation():
     prior_year = dt.date(2017, 8, 23) - dt.timedelta(days=365)
     prcp_score = session.query(Measurement.date, Measurement.prcp).\
       filter(Measurement.date >= prior_year).all()
-    precip = {date: prcp for date, prcp in precipitation}
+    precip = {date: prcp for date, prcp in prcp_score}
     return jsonify(precip)
 
 @app.route("/api/v1.0/stations")
@@ -49,17 +72,18 @@ def temp_monthly():
     return jsonify(temps=temps)
 @app.route("/api/v1.0/temp/<start>")
 @app.route("/api/v1.0/temp/<start>/<end>")
-def stats(start='2017-06-01',end='2017-06-30'):
+def stats(start='06-01-2017',end=None):
+    start = dt.datetime.strptime(start, "%m-%d-%Y")
     sel = [func.min(Measurement.tobs),func.avg(Measurement.tobs),func.max(Measurement.tobs)]
-    if not end:
+    if end:
+        end = dt.datetime.strptime(end, "%m-%d-%Y")
         results = session.query(*sel).\
             filter(Measurement.date >= start).\
             filter(Measurement.date <= end).all()
         temps = list(np.ravel(results))
         return jsonify(temps)
     results = session.query(*sel).\
-        filter(Measurement.date >= start).\
-        filter(Measurement.date <= end).all()
+        filter(Measurement.date >= start).all()
     temps = list(np.ravel(results))
     return jsonify(temps=temps)    
 
